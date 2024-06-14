@@ -1,73 +1,90 @@
-﻿using System.Text;
+﻿const char ALIVE = 'X';
+const char DEAD = ' ';
 
-var rounds = 0;
-var width = 160;
-var height = 40;
-var state = new int[width, height];
-var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
-var cts = new CancellationTokenSource();
-var board = new StringBuilder($"Round: {rounds}\n");
-var changes = new List<(int, int, int)>();
-var random = new Random(420);
+var seed = GetSeedFromUser();
 
-Console.Title = "Conway's Game of Life";
-Console.CursorVisible = false;
-
-for (var y = 0; y < height; y++)
+var rows = Console.WindowHeight - 1;
+var columns = Console.WindowWidth - 1;
+var random = new Random(seed);
+var state = new char[rows][];
+for (var i = 0; i < rows; i++)
 {
-    for (var x = 0; x < width; x++)
+    state[i] = new char[columns];
+    for (var j = 0; j < columns; j++)
     {
-        state[x, y] = random.Next(0, 2);
-        board.Append(state[x, y] == 1 ? 'X' : ' ');
+        state[i][j] = random.Next(0, 2) == 1 ? ALIVE : DEAD;
     }
-    board.Append('\n');
 }
+var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(120));
+var cts = new CancellationTokenSource();
 
 while (await timer.WaitForNextTickAsync(cts.Token))
 {
-    rounds++;
-    board.Clear();
-    board.Append($"Round: {rounds}\n");
-    for (var y = 0; y < height; y++)
+    Render(state);
+    PlayRound(state);
+}
+
+static int GetSeedFromUser()
+{
+    Console.WriteLine("Enter a seed value:");
+    var seed = 0;
+    while (true)
     {
-        for (var x = 0; x < width; x++)
+        var input = Console.ReadLine();
+        if (int.TryParse(input, out seed))
         {
-            var value = state[x, y];
+            return seed;
+        }
+        Console.WriteLine("Invalid input. Please enter a valid number.");
+    }
+}
+
+static void PlayRound(char[][] state)
+{
+    var buffer = new char[state.Length][];
+    for (var i = 0; i < state.Length; i++)
+    {
+        buffer[i] = new char[state[i].Length];
+        for (var j = 0; j < state[i].Length; j++)
+        {
             var neighbors = 0;
-            for (var dy = -1; dy <= 1; dy++)
+            for (var y = i - 1; y <= i + 1; y++)
             {
-                for (var dx = -1; dx <= 1; dx++)
+                for (var x = j - 1; x <= j + 1; x++)
                 {
-                    if (dx == 0 && dy == 0)
+                    if (x == j && y == i)
                         continue;
 
-                    var nx = x + dx;
-                    var ny = y + dy;
-
-                    if (nx < 0 || nx >= width || ny < 0 || ny >= height)
+                    if (y < 0 || y >= state.Length || x < 0 || x >= state[i].Length)
                         continue;
 
-                    neighbors += state[nx, ny];
+                    if (state[y][x] == ALIVE)
+                        neighbors++;
                 }
             }
-            if (neighbors < 2)
-                value = 0;
-            else if (neighbors > 3)
-                value = 0;
-            else if (neighbors == 3)
-                value = 1;
 
-            board.Append(value == 1 ? 'X' : ' ');
-
-            if (state[x, y] != value)
-                changes.Add((x, y, value));
+            buffer[i][j] = neighbors switch
+            {
+                2 => state[i][j],
+                3 => ALIVE,
+                _ => DEAD
+            };
         }
-        board.Append('\n');
     }
-    foreach (var (x, y, value) in changes)
+    for (var i = 0; i < state.Length; i++)
     {
-        state[x, y] = value;
+        for (var j = 0; j < state[i].Length; j++)
+        {
+            state[i][j] = buffer[i][j];
+        }
     }
+}
+
+static void Render(char[][] state)
+{
     Console.Clear();
-    Console.Write(board.ToString());
+    for (var y = 0; y < state.Length; y++)
+    {
+        Console.WriteLine(state[y]);
+    }
 }
