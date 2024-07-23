@@ -3,6 +3,7 @@ const char DEAD = ' ';
 
 var seed = GetSeedFromUser();
 
+Console.CursorVisible = false;
 var rows = Console.WindowHeight - 1;
 var columns = Console.WindowWidth - 1;
 var random = new Random(seed);
@@ -26,12 +27,11 @@ while (await timer.WaitForNextTickAsync(cts.Token))
 
 static int GetSeedFromUser()
 {
-    Console.WriteLine("Enter a seed value:");
-    var seed = 0;
+    Console.WriteLine("Enter a seed value:");    
     while (true)
     {
         var input = Console.ReadLine();
-        if (int.TryParse(input, out seed))
+        if (int.TryParse(input, out var seed))
         {
             return seed;
         }
