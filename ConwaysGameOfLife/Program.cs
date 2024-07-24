@@ -1,49 +1,61 @@
 ﻿const char ALIVE = 'X';
 const char DEAD = ' ';
 
-var seed = GetSeedFromUser();
-
 Console.CursorVisible = false;
-Console.Clear();
-var rows = Console.WindowHeight - 1;
-var columns = Console.WindowWidth - 1;
-var random = new Random(seed);
+var rows = Console.WindowHeight;
+var columns = Console.WindowWidth;
 var state = new char[rows][];
 var buffer = new char[rows][];
+var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
+
 for (var i = 0; i < rows; i++)
 {
     state[i] = new char[columns];
     buffer[i] = new char[columns];
-    for (var j = 0; j < columns; j++)
-    {
-        var value = random.Next(0, 2) == 1 ? ALIVE : DEAD;
-        state[i][j] = value;
-        Console.SetCursorPosition(j, i);
-        Console.Write(value);
-    }
 }
-var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
-var cts = new CancellationTokenSource();
 
-while (cts.IsCancellationRequested is false)
+while (true)
 {
-    PlayRound(state, buffer);
+    var seed = GetSeedFromUser();
+    Initialize(state, seed);
 
-    await timer.WaitForNextTickAsync(cts.Token);
-    Render(state, buffer);
+    while (!(Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Escape))
+    {
+        PlayRound(state, buffer);
+
+        await timer.WaitForNextTickAsync();
+        Render(state, buffer);
+    }
 }
 
 static int GetSeedFromUser()
 {
+    Console.Clear();
     Console.WriteLine("Enter a seed value:");    
     while (true)
     {
         var input = Console.ReadLine();
         if (int.TryParse(input, out var seed))
         {
+            Console.Clear();
             return seed;
         }
         Console.WriteLine("Invalid input. Please enter a valid number.");
+    }
+}
+
+static void Initialize(char[][] state, int seed)
+{
+    var random = new Random(seed);
+    for (var i = 0; i < state.Length; i++)
+    {
+        for (var j = 0; j < state[i].Length; j++)
+        {
+            var value = random.Next(0, 2) == 1 ? ALIVE : DEAD;
+            state[i][j] = value;
+            Console.SetCursorPosition(j, i);
+            Console.Write(value);
+        }
     }
 }
 
