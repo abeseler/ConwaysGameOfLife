@@ -1,4 +1,4 @@
-﻿const char ALIVE = 'X';
+﻿const char LIVE = 'X';
 const char DEAD = ' ';
 
 Console.CursorVisible = false;
@@ -51,7 +51,7 @@ static void Initialize(char[][] state, int seed)
     {
         for (var j = 0; j < state[i].Length; j++)
         {
-            var value = random.Next(0, 2) == 1 ? ALIVE : DEAD;
+            var value = random.Next(0, 2) == 1 ? LIVE : DEAD;
             state[i][j] = value;
             Console.SetCursorPosition(j, i);
             Console.Write(value);
@@ -65,30 +65,35 @@ static void PlayRound(char[][] state, char[][] buffer)
     {
         for (var j = 0; j < state[i].Length; j++)
         {
-            var neighbors = 0;
-            for (var y = i - 1; y <= i + 1; y++)
-            {
-                for (var x = j - 1; x <= j + 1; x++)
-                {
-                    if (x == j && y == i)
-                        continue;
-
-                    if (y < 0 || y >= state.Length || x < 0 || x >= state[i].Length)
-                        continue;
-
-                    if (state[y][x] == ALIVE)
-                        neighbors++;
-                }
-            }
-
+            var neighbors = CountNeighbors(state, i, j);
             buffer[i][j] = neighbors switch
             {
                 2 => state[i][j],
-                3 => ALIVE,
+                3 => LIVE,
                 _ => DEAD
             };
         }
     }
+}
+
+static int CountNeighbors(char[][] state, int i, int j)
+{
+    var count = 0;
+    for (var y = i - 1; y <= i + 1; y++)
+    {
+        for (var x = j - 1; x <= j + 1; x++)
+        {
+            if (x == j && y == i)
+                continue;
+
+            if (y < 0 || y >= state.Length || x < 0 || x >= state[i].Length)
+                continue;
+
+            if (state[y][x] == LIVE)
+                count++;
+        }
+    }
+    return count;
 }
 
 static void Render(char[][] state, char[][] buffer)
