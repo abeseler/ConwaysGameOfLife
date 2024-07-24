@@ -4,25 +4,33 @@ const char DEAD = ' ';
 var seed = GetSeedFromUser();
 
 Console.CursorVisible = false;
+Console.Clear();
 var rows = Console.WindowHeight - 1;
 var columns = Console.WindowWidth - 1;
 var random = new Random(seed);
 var state = new char[rows][];
+var buffer = new char[rows][];
 for (var i = 0; i < rows; i++)
 {
     state[i] = new char[columns];
+    buffer[i] = new char[columns];
     for (var j = 0; j < columns; j++)
     {
-        state[i][j] = random.Next(0, 2) == 1 ? ALIVE : DEAD;
+        var value = random.Next(0, 2) == 1 ? ALIVE : DEAD;
+        state[i][j] = value;
+        Console.SetCursorPosition(j, i);
+        Console.Write(value);
     }
 }
-var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(120));
+var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
 var cts = new CancellationTokenSource();
 
-while (await timer.WaitForNextTickAsync(cts.Token))
+while (cts.IsCancellationRequested is false)
 {
-    Render(state);
-    PlayRound(state);
+    PlayRound(state, buffer);
+
+    await timer.WaitForNextTickAsync(cts.Token);
+    Render(state, buffer);
 }
 
 static int GetSeedFromUser()
@@ -39,12 +47,10 @@ static int GetSeedFromUser()
     }
 }
 
-static void PlayRound(char[][] state)
+static void PlayRound(char[][] state, char[][] buffer)
 {
-    var buffer = new char[state.Length][];
     for (var i = 0; i < state.Length; i++)
     {
-        buffer[i] = new char[state[i].Length];
         for (var j = 0; j < state[i].Length; j++)
         {
             var neighbors = 0;
@@ -71,20 +77,20 @@ static void PlayRound(char[][] state)
             };
         }
     }
+}
+
+static void Render(char[][] state, char[][] buffer)
+{
     for (var i = 0; i < state.Length; i++)
     {
         for (var j = 0; j < state[i].Length; j++)
         {
-            state[i][j] = buffer[i][j];
+            if (state[i][j] != buffer[i][j])
+            {
+                state[i][j] = buffer[i][j];
+                Console.SetCursorPosition(j, i);
+                Console.Write(state[i][j]);
+            }
         }
-    }
-}
-
-static void Render(char[][] state)
-{
-    Console.Clear();
-    for (var y = 0; y < state.Length; y++)
-    {
-        Console.WriteLine(state[y]);
     }
 }
